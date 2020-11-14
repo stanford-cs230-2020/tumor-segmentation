@@ -22,6 +22,7 @@ from keras.layers import Input, Reshape, Flatten, Dropout, SpatialDropout3D, Dro
 from keras.optimizers import Adam as adam
 from keras.models import Model
 import tensorflow as tf
+from tensorflow.keras import layers
 
 tf.compat.v1.disable_eager_execution()
 
@@ -214,6 +215,45 @@ def loss_VAE(input_shape, z_mean, z_var, weight_L2=0.1, weight_KL=0.1):
 
     return loss_VAE_
 
+
+class InputCorrupt(layers.Layer):
+    '''
+    Description: customized layer used to randomly drop selected input modalities
+    channel:
+    0: t1
+    1: t2
+    2: t1ce
+    3: flair
+
+    Goal is to optimize without using t1 and t2
+
+    usage:
+    x = tf.random.normal(shape=(4,20,20))
+    y = InputCorrupt()(x)
+    '''
+    def build(self, input_shape):
+        output_dim = input_shape
+
+    def call(self, inputs):
+
+        x = inputs
+        # print(tf.shape(x))
+
+        x_mask = tf.ones_like(inputs, dtype=bool)
+        x_mask = tf.Variable(x_mask)
+
+        indices_to_remove = [0, 1]  # indices to get rid of t1 and t2 modes
+        for index in indices_to_remove:
+            thresh1 = random.uniform(0, 1)
+            # print(thresh1)
+            if thresh1 < 0.5:
+                # print('remove index: {}'.format(index))
+                x_mask[index, :, :].assign(tf.zeros_like(x_mask[index, :, :], dtype=bool))
+
+        y = tf.multiply(x, tf.cast(x_mask, x.dtype))
+
+        return y
+
 def build_model(input_shape=(4, 160, 192, 128), output_channels=3, weight_L2=0.1, weight_KL=0.1, dice_e=1e-8, input_dropout_rate=0.5):
     """
     build_model_ae(input_shape=(4, 160, 192, 128), output_channels=3, weight_L2=0.1, weight_KL=0.1)
@@ -261,7 +301,10 @@ def build_model(input_shape=(4, 160, 192, 128), output_channels=3, weight_L2=0.1
     ## Input Layer
     inp = Input(input_shape)
 
-    # ## Dropout Input Layer (starting 50% for removal of 2 modalities)
+    ## Dropout Input Layer (starting 50% for removal of 2 modalities)
+    x = InputCorrupt()(inp)
+    # x = inp # Use this line if you want to not skip the first layer
+
     # x = SpatialDropout3D(input_dropout_rate, data_format='channels_first')(x)
 
     ## The Initial Block
@@ -271,7 +314,7 @@ def build_model(input_shape=(4, 160, 192, 128), output_channels=3, weight_L2=0.1
         strides=1,
         padding='same',
         data_format='channels_first',
-        name='Input_x1')(inp)
+        name='Input_x1')(x)
 
     ## Dropout (0.2)
     x = SpatialDropout3D(0.2, data_format='channels_first')(x)
