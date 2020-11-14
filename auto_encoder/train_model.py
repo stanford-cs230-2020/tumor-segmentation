@@ -20,6 +20,9 @@ import os, pickle
 from keras.callbacks import History, ModelCheckpoint, CSVLogger
 from datetime import datetime
 from keras.models import load_model
+import sys
+
+
 
 def read_img(img_path):
     """
@@ -200,8 +203,10 @@ if __name__ == '__main__':
     timestamp = datetime.today().strftime('%Y-%m-%d-%H%M')
     timestamp = str(timestamp)
 
-    filepath_checkpoint = os.path.join(output_path,'checkpoints','checkpoints/ae_weights.{epoch:03d}-{loss:.5f}.hdf5')
-    filepath_csv = os.path.join(output_path,'checkpoints','log_{}.csv'.format(timestamp))
+    # filepath_checkpoint = os.path.join(output_path,'checkpoints','checkpoints/ae_weights.{epoch:03d}-{loss:.5f}.hdf5')
+    filepath_checkpoint = 'ae_weights.{epoch:03d}-{loss:.5f}.hdf5'
+    # filepath_csv = os.path.join(output_path,'checkpoints','log_{}.csv'.format(timestamp))
+    filepath_csv = 'log_{}.csv'.format(timestamp)
 
     checkpoint = ModelCheckpoint(filepath = filepath_checkpoint, monitor='loss', verbose=1, save_best_only=True, mode='min')
 

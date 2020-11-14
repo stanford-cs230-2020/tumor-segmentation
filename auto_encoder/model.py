@@ -248,7 +248,7 @@ class InputCorrupt(layers.Layer):
             # print(thresh1)
             if thresh1 < 0.5:
                 # print('remove index: {}'.format(index))
-                x_mask[index, :, :].assign(tf.zeros_like(x_mask[index, :, :], dtype=bool))
+                x_mask[index, :, :, :].assign(tf.zeros_like(x_mask[index, :, :], dtype=bool))
 
         y = tf.multiply(x, tf.cast(x_mask, x.dtype))
 
